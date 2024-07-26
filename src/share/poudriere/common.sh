@@ -4375,6 +4375,38 @@ download_from_repo() {
 		    "${remote_all_cats}" "${wantedpkgs}"
 	done
 	parallel_stop
+
+	# Fail if package wont be fetched
+	set -o noglob
+	for fopkg_glob in ${PACKAGE_FETCH_ONLY-"*"}; do
+		# Look in missing packages
+		found_fo_missing=0
+		while mapfile_read_loop "${missing_pkgs}" pkgname; do
+			case "${pkgname}" in
+			${fopkg_glob})
+				found_fo_missing=1
+				break
+				;;
+			easc
+		done
+		# Look in wanted packages
+		found_fo_wanted=0
+			while mapfile_read_loop "${wantedpkgs}" pkgname; do
+			case "${pkgname}" in
+			${fopkg_glob})
+				found_fo_wanted=1
+				break
+				;;
+			esac
+		done
+		# Check condition
+  		if [ ${found_fo_missing} -a ! ${found_fo_wanted} ]; then
+			msg "Package fetch: Failed because package in fetch only list"
+			err 1 "package_fetch_only"
+		fi
+	done
+ 	set +o noglob
+
 	rm -f "${missing_pkgs}" \
 	    "${remote_all_pkgs}" "${remote_all_options}" "${remote_all_deps}" \
 	    "${remote_all_annotations}" "${remote_all_abi}" \
